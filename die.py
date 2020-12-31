@@ -1,27 +1,74 @@
-class Die:
+import random
 
-    ALLOWED_TYPES = ["GREEN", "ORANGE", "RED"]
+class DieFace:
+
+    def __init__(self, face_type, count=1):
+        self.face_type = face_type
+        self.count = count
+
+class Die:
 
     def __init__(self, die_type : str):
         self.die_type = die_type
-
-        self.set_die_attributes()
-
+        self.faces = self.set_die_attributes()
+        
     def set_die_attributes(self):
         """ Set the die attributes such as brain, run, and shotgun counts. """
-        if self.die_type in self.ALLOWED_TYPES:
-            if self.die_type == self.ALLOWED_TYPES[0]:
-                self.brains = 3
-                self.runs = 2
-                self.shotguns = {"CNT": 1, "DMG": 1}
-            elif self.die_type == self.ALLOWED_TYPES[1]:
-                self.brains = 2
-                self.runs = 2
-                self.shotguns = {"CNT": 2, "DMG": 1}
-            elif self.die_type == self.ALLOWED_TYPES[2]:
-                self.brains = 1
-                self.runs = 2
-                self.shotguns = {"CNT": 3, "DMG": 1}
+        faces = []
+
+        if self.die_type == "GREEN":
+            faces = [DieFace("BRAIN"), 
+                     DieFace("BRAIN"), 
+                     DieFace("BRAIN"), 
+                     DieFace("RUN"), 
+                     DieFace("RUN"), 
+                     DieFace("SHOTGUN")
+            ]
+        elif self.die_type == "ORANGE":
+            faces = [DieFace("BRAIN"), 
+                     DieFace("BRAIN"), 
+                     DieFace("RUN"), 
+                     DieFace("RUN"), 
+                     DieFace("SHOTGUN"), 
+                     DieFace("SHOTGUN")
+            ]
+        elif self.die_type == "RED":
+            faces = [DieFace("BRAIN"), 
+                     DieFace("RUN"), 
+                     DieFace("RUN"), 
+                     DieFace("SHOTGUN"), 
+                     DieFace("SHOTGUN"), 
+                     DieFace("SHOTGUN")
+            ]
         else:
-            raise ValueError(f"The die type {self.die_type} is not in {self.ALLOWED_TYPES} and is therefore not valid")
-    
+            raise ValueError(f"The provided die_type '{self.die_type}' is invalid.")
+        
+        return faces
+
+    def roll(self):
+        return random.choice(self.faces)
+
+class Dice:
+
+    def __init__(self):
+        # It's not very nice how I'm creating the lists here. Will cleanup later.
+        self.dice = [
+            Die("GREEN"),
+            Die("GREEN"),
+            Die("GREEN"),
+            Die("GREEN"),
+            Die("GREEN"),
+            Die("ORANGE"),
+            Die("ORANGE"),
+            Die("ORANGE"),
+            Die("RED"),
+            Die("RED"),
+            Die("RED")
+        ]
+
+    def get_random_dice(self, num):
+        random_dice = []
+        for i in range(num):
+            die_index = random.randint(0, len(self.dice) - 1)
+            random_dice.append(self.dice.pop(die_index))
+        return random_dice
