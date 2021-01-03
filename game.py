@@ -25,7 +25,7 @@ class Game:
 
         self.players = Players.initialise_players()
 
-        self.current_player = self.players.curr_player
+        self.current_player = self.players.starting_player()
 
         if not self.args.ol:
             self.current_player_count = len(self.players)
