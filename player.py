@@ -1,4 +1,5 @@
 import random
+from helpers import bool_question
 
 class Player:
 
@@ -8,11 +9,12 @@ class Player:
         self.id = self.id_counter
         self.id_counter += 1
 
-        # self.previous_player = None
         self.next_player = None
 
         self.name = name
         self.age = age
+
+        self.turn_brains = 0
 
         self.collected_brains = 0
         self.collected_shotguns = 0
@@ -27,12 +29,13 @@ class Players:
     def initialise_players():
         entering = True
         players = Players()
+        print("-" * 10, "ENTER PLAYER DETAILS", "-" * 10)
         while entering:
             player_name = Players.validate_name("What is the player's name? ")
             player_age = Players.validate_age("What is the player's age? ")
             players.add_player(player_name, player_age)
             if len(players) > 1:
-                entering = False
+                entering = bool_question("Would you like to enter another player? (yes or no) ", ["yes", "no"])
         return players
 
     @staticmethod
@@ -105,6 +108,8 @@ class Players:
         if len(same_aged_players):
             same_aged_players.append(lowest_aged_player)
             lowest_aged_player = random.choice(same_aged_players)
+
+        self.curr_player = lowest_aged_player
 
         return lowest_aged_player
 

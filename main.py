@@ -3,7 +3,7 @@ import argparse
 from game import Game
 
 def main(args):
-    Game.print_rules()
+    Game.intro()
     game = Game(args)
     while game.ongoing:
         game.turn()

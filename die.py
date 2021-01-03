@@ -52,12 +52,17 @@ class Dice:
 
     def __init__(self):
         # It's not very nice how I'm creating the lists here. Will cleanup later.
-        self.dice = [
+        self.dice = self.set_default()
+
+    def set_default(self):
+        return [
             Die("GREEN"),
             Die("GREEN"),
             Die("GREEN"),
             Die("GREEN"),
             Die("GREEN"),
+            Die("GREEN"),
+            Die("ORANGE"),
             Die("ORANGE"),
             Die("ORANGE"),
             Die("ORANGE"),
@@ -68,7 +73,12 @@ class Dice:
 
     def get_random_dice(self, num):
         random_dice = []
+        if num > len(self.dice):
+            self.dice = self.set_default()
         for i in range(num):
-            die_index = random.randint(0, len(self.dice) - 1)
-            random_dice.append(self.dice.pop(die_index))
+            selected_die = random.choice(self.dice)
+            self.dice.remove(selected_die)
+            random_dice.append(selected_die)
+            # die_index = random.randint(0, len(self.dice) - 1)
+            # random_dice.append(self.dice.pop(die_index))
         return random_dice

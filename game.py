@@ -1,25 +1,10 @@
 import random
+import time
+from helpers import bool_question
 from player import Players
 from die import Dice
 
-def question(question : str, valid_responses : list) -> bool:
-    response = None
-    answer = input(question)
-    while response is None:
-        try:
-            if answer in valid_responses:
-                if answer == valid_responses[0]:
-                    response = True
-                else:
-                    response = False
-            else:
-                raise ValueError(f"Your response '{answer}' isn't one of the valid options")
-        except ValueError as e:
-            print(str(e))
-            answer = input(question)
-    return response
-
-def place_string(place : int) :
+def place_string(place : int) -> str:
     if place == 1:
         place_string = "1st"
     elif place == 2:
@@ -38,13 +23,9 @@ class Game:
 
         self.no_expansion = self.args.ne
 
-        # self.players = Players.initialise_players()
+        self.players = Players.initialise_players()
 
-        self.players = Players()
-        self.players.add_player("Alex", 19)
-        self.players.add_player("Edward", 19)
-
-        self.current_player = self.players.starting_player()
+        self.current_player = self.players.curr_player
 
         if not self.args.ol:
             self.current_player_count = len(self.players)
@@ -53,87 +34,90 @@ class Game:
         self.ongoing = True
     
     @staticmethod
-    def print_rules():
-        print("ZOMBIE DICE RULES:")
-        print("Rules will be added here.")
-
-    # def starting_player(self):
-    #     """ Determines the starting player by who is the youngest. """
-    #     starting_player = None
-    #     if (filter(lambda player: player.age == self.players[0].age, self.players[1:])):
-    #         starting_player = self.players[random.randint(0, len(self.players) - 1)]
-    #     else:
-    #         starting_player = min(self.players, key=lambda player: player.age)
-    #     return starting_player
+    def intro():
+        print("-" * 10, "WELCOME TO ZOMBIE DICE", "-" * 10)
+        no_rules = bool_question("Have you played zombie dice before? (yes or no) ", ["yes", "no"])
+        if not no_rules:
+            print("ZOMBIE DICE RULES:")
+            print("Rules will be added here.")
 
     def turn(self):
-        print(f"It is {self.current_player.name}'s turn.")
-        self.current_player.collected_shotguns = 0
-        continuing = True
+        print("-" * 20)
+        print(f"Turn {self.turn_number} | It is {self.current_player.name}'s turn.")
+        print(f"Current Brains | {self.current_player.collected_brains}")
+        print("-" * 20)
+        time.sleep(1)
+
+        can_play = True
         dice = Dice()
-        while not self.check_for_turn_loss() and not self.check_for_win() and continuing:
-            selected_dice = dice.get_random_dice(3)
-            for die in selected_dice:
-                die_roll = die.roll()
-                die_face = die_roll.face_type
-                die_face_count = die_roll.count
-                if die_face == "SHOTGUN":
-                    self.current_player.collected_shotguns += die_face_count
-                    print(f"{die.die_type}: You collected {die_face_count} shots, you now have {self.current_player.collected_shotguns} shots.")
-                    if self.check_for_turn_loss():
-                        self.turn_loss()
-                        break
-                elif die_face == "BRAIN":
-                    self.current_player.collected_brains += die_face_count
-                    print(f"{die.die_type}: You collected {die_face_count} brains, you now have {self.current_player.collected_brains} brains.")
-                    if self.check_for_win():
-                        self.won()
-                        break
-                elif die_face == "RUN":
-                    print(f"{die.die_type}: The person you were chasing ran away!")
-            for die in dice.dice:
-                print(die.die_type, end=" ")
-            print()
-            if not self.check_for_turn_loss() and not self.check_for_win():
-                continuing = question("Would you like to continue? (yes or no) ", ["yes", "no"])
+        selected_dice = []
+
+        while can_play:
+            # Calculate and get the number of new dice required to be drawn from the cup
+            number_of_new_dice = 3 - len(selected_dice)
+            selected_dice += dice.get_random_dice(number_of_new_dice)
+
+            # For each of the dice, roll them, and remove them if they didn't run away (there action has been completed)
+            for i in range(len(selected_dice) - 1, -1, -1):
+                die_played = self.roll_die(selected_dice[i])
+                if die_played:
+                    selected_dice.remove(selected_dice[i])
+            
+            # If the player has not won the game and lost their turn provide the option to continue
+            if not self.win_check() and not self.lose_check():
+                print("-" * 10)
+                can_play = bool_question("Would you like to continue playing? ", ["yes", "no"])
+                if can_play:
+                    print("-" * 10)
+                
+                # Add the brains they collected during their turn to their stored total
+                if not can_play:
+                    self.current_player.collected_brains += self.current_player.turn_brains
             else:
-                continuing = False
-        else:
-            self.next_turn()
+                # If the player has meet the win condition (>= 13 brains) and did not lose the round that got them the last required brains
+                if self.win_check() and not self.lose_check():
+                    self.won()
+                
+                can_play = False
+
+        # Change the player
+        self.next_turn()
 
     def next_turn(self):
-        self.turn_number += 1
-        self.next_player()
-        self.current_player = self.players.curr_player
+        # Reset the current players turn based stats before going to next player
+        self.current_player.turn_brains = 0
+        self.current_player.collected_shotguns = 0
 
-    def next_player(self):
-        # return self.players[self.turn_number % self.current_player_count]
         self.players.next_player()
+        self.current_player = self.players.curr_player
+        self.turn_number += 1
 
-    def check_for_turn_loss(self):
+    def win_check(self) -> bool:
+        return self.current_player.collected_brains + self.current_player.turn_brains >= 13
+    
+    def won(self):
+        print(f"Congratulations {self.current_player.name}! You have won.")
+
+        self.ongoing = False
+
+    def lose_check(self) -> bool:
         return self.current_player.collected_shotguns >= 3
 
-    def turn_loss(self):
-        print(f"Your turn is over as you have {self.current_player.collected_shotguns} shots.")
-        # self.next_turn()
+    def roll_die(self, die) -> int:
+        die_roll = die.roll()
+        die_face = die_roll.face_type
+        die_face_count = die_roll.count
 
-    def check_for_win(self):
-        return self.current_player.collected_brains >= 13
-
-    def won(self):
-        """ This message is shown to the player who first gets 13 brains """
+        if die_face == "SHOTGUN":
+            self.current_player.collected_shotguns += die_face_count
+            print(f"{die.die_type}: You collected {die_face_count} shots, you now have {self.current_player.collected_shotguns} shots.")
+            time.sleep(1)
+        elif die_face == "BRAIN":
+            self.current_player.turn_brains += die_face_count
+            print(f"{die.die_type}: You collected {die_face_count} brains, you would now have {self.current_player.collected_brains + self.current_player.turn_brains} brains if you banked.")
+            time.sleep(1)
+        elif die_face == "RUN":
+            print(f"{die.die_type}: The person you were chasing ran away!")
+            time.sleep(1)
         
-        # if self.args.ol or self.current_player_count == len(self.players):
-        #     """ This is the first person to win the game """
-        #     print(f"Congradulations {self.current_player}. You have won!")
-        # else:
-        #     self.current_player_count -= 1
-        #     place = self.players - self.current_player_count
-        #     print(f"Good job. You came {place_string(place)}")
-
-        if not self.args.ol:
-            self.ongoing = False
-
-    def loss(self):
-        """ If there can be more than one loser (self.args.ol = False), this method is called when there is only one player remaining and they have therefore lost the game """
-        pass
+        return True if die_face != "RUN" else False
