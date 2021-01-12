@@ -1,8 +1,15 @@
-import random
 import time
+import random
+from math import ceil
 from helpers import bool_question
 from player import Players
 from die import Dice
+
+def pluralise(string : str, count : int) -> str:
+    new_string = string
+    if count != 1:
+        new_string = string + "s"
+    return new_string
 
 def place_string(place : int) -> str:
     if place == 1:
@@ -21,13 +28,13 @@ class Game:
 
         self.args = args
 
-        self.no_expansion = self.args.ne
+        self.no_expansion = True if self.args.no_expansion else False
 
         self.players = Players.initialise_players()
 
         self.current_player = self.players.starting_player()
 
-        if not self.args.ol:
+        if not self.args.one_loser:
             self.current_player_count = len(self.players)
 
         self.turn_number = 1
@@ -43,7 +50,7 @@ class Game:
 
     def turn(self):
         print("-" * 20)
-        print(f"Turn {self.turn_number} | It is {self.current_player.name}'s turn.")
+        print(f"Round {ceil(self.turn_number / self.current_player_count)} | It is {self.current_player.name}'s turn.")
         print(f"Current Brains | {self.current_player.collected_brains}")
         print("-" * 20)
         time.sleep(1)
@@ -66,7 +73,7 @@ class Game:
             # If the player has not won the game and lost their turn provide the option to continue
             if not self.win_check() and not self.lose_check():
                 print("-" * 10)
-                can_play = bool_question("Would you like to continue playing? ", ["yes", "no"])
+                can_play = bool_question("Roll again? ", ["yes", "no"])
                 if can_play:
                     print("-" * 10)
                 
@@ -110,11 +117,13 @@ class Game:
 
         if die_face == "SHOTGUN":
             self.current_player.collected_shotguns += die_face_count
-            print(f"{die.die_type}: You collected {die_face_count} shots, you now have {self.current_player.collected_shotguns} shots.")
+            shotgun_count = self.current_player.collected_shotguns
+            print(f"{die.die_type}: You collected {die_face_count} {pluralise('shot', shotgun_count)}, you now have {shotgun_count} {pluralise('shot', shotgun_count)}.")
             time.sleep(1)
         elif die_face == "BRAIN":
             self.current_player.turn_brains += die_face_count
-            print(f"{die.die_type}: You collected {die_face_count} brains, you would now have {self.current_player.collected_brains + self.current_player.turn_brains} brains if you banked.")
+            brain_count = self.current_player.turn_brains
+            print(f"{die.die_type}: You collected {die_face_count} {pluralise('brain', brain_count)}, you would now have {self.current_player.collected_brains + brain_count} {pluralise('brain', brain_count)} if you banked.")
             time.sleep(1)
         elif die_face == "RUN":
             print(f"{die.die_type}: The person you were chasing ran away!")

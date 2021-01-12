@@ -1,5 +1,5 @@
-import random
 from helpers import bool_question
+import random
 
 class Player:
 
@@ -43,10 +43,10 @@ class Players:
         valid = False
         while not valid:
             name = input(question)
-            if name and name.isalpha():
+            if all(letter.isalpha() or letter.isspace() for letter in name):
                 valid = True
             else:
-                print("Please enter a name containing only letters.")
+                print("Please enter a name containing only letters and spaces.")
         return name
 
     @staticmethod
